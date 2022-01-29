@@ -19,7 +19,7 @@ def populate():
         {'title': 'How to Think like a Computer Scientist',
          'url': 'http://www.greenteapress.com/thinkpython/'},
         {'title': 'Learn Python in 10 Minutes',
-         'url': 'http://www.korokithakis.net/tutorial/python/'},
+         'url': 'http://www.korokithakis.net/tutorials/python/'},
 
     ]
 
@@ -57,8 +57,8 @@ def populate():
             print(f'- {c}: {p}')
 
 
-def add_page(cat, title, url, views=0):
-    p = Page.objects.get_or_create(category=cat, title=title, views=888)[0]
+def add_page(cat, title, url, views=888):
+    p = Page.objects.get_or_create(category=cat, title=title)[0]
     p.url = url
     p.views = views
     p.save()

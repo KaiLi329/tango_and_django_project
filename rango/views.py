@@ -12,7 +12,7 @@ def index(request):
     # Retrieve top 5 only
     # Place the list in context_dict
     category_list = Category.objects.order_by('-likes')[:5]
-    page_list = Page.objects.order_by('views')[:5]
+    page_list = Page.objects.order_by('-views')[:5]
 
     context_dict = {}
     context_dict['boldmessage'] = 'Crunchy, creamy, cookie, candy, cupcake!'
