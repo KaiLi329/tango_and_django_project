@@ -1,5 +1,6 @@
-from rango.models import Category, Page
-from rango.forms import CategoryForm, PageForm
+from rango.models import Category, Page, UserProfile
+from rango.forms import CategoryForm, PageForm, UserForm, UserProfileForm
+from django.contrib.auth.models import User
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.shortcuts import render
@@ -54,6 +55,7 @@ def show_category(request, category_name_slug):
     return render(request, 'rango/category.html', context=context_dict)
 
 
+# add category
 def add_category(request):
     form = CategoryForm()
 
@@ -75,6 +77,7 @@ def add_category(request):
     return render(request, 'rango/add_category.html', {'form': form})
 
 
+# add page
 def add_page(request, category_name_slug):
     try:
         category = Category.objects.get(slug=category_name_slug)
@@ -105,3 +108,54 @@ def add_page(request, category_name_slug):
     return render(request, 'rango/add_page.html', context=context_dict)
 
 
+# register
+def register(request):
+    # A boolean value for telling the template whether the registration was successful
+    registered = False
+
+    if request.method == 'POST':
+        # Attempt to grab information from the row form information
+        user_form = UserForm(request.POST)
+        profile_form = UserProfileForm(request.POST)
+
+        # If the two forms are valid
+        if user_form.is_valid() and profile_form.is_valid():
+            # Save
+            user = user_form.save()
+
+            # Hash the password with set_password method
+            user.set_password(user.password)
+            user.save()
+
+            # Sort out the UserProfile instance
+            # Since we need to set the user attribute ourselves
+            # we set commit=False, This delays saving the model until we're ready to avoid integrity problems
+            profile = profile_form.save(commit=False)
+            profile.user = user
+
+            # Did the user provide a profile pic?
+            # If so, we need to get it from the input form and put it in the UserProfile model
+            if 'picture' in request.FILES:
+                profile.picture = request.FILES['picture']
+
+            # Now we save the UserProfile model instance
+            profile.save()
+
+            # Update the boolean variable
+            registered = True
+        else:
+            # Invalid form or forms - mistake or sth else
+            # Print problems to the terminal
+            print(user_form.errors, profile_form.errors)
+    else:
+        # Not a HTTP POST, render our form using two ModelForm instance
+        # These forms will be blank, ready for user input.
+        user_form = UserForm()
+        profile_form = UserProfileForm()
+
+    # Render the template depending on the context
+    return render(request,
+                  'rango/register.html',
+                  context={'user_form': user_form,
+                           'profile_form': profile_form,
+                           'registered': registered})
