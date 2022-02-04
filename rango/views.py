@@ -1,6 +1,7 @@
 from rango.models import Category, Page, UserProfile
 from rango.forms import CategoryForm, PageForm, UserForm, UserProfileForm
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.shortcuts import render
@@ -159,3 +160,40 @@ def register(request):
                   context={'user_form': user_form,
                            'profile_form': profile_form,
                            'registered': registered})
+
+
+# Login
+def user_login(request):
+    # HTTP POST?
+    if request.method == 'POST':
+        # Gather the username and password provided by the user.
+        # information obtained from the login form
+        # user request.POST.get('<variable>') as opposed to request.POST['<variable>'],
+        # because the request.POST.get('<variable>') returns None if the value does not exist,
+        # while request.POST.get['<variable>'] will raise a KeyError exception
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+
+        # Use Django's machinery to attempt to see if the username/password
+        # combination is valid - A User object is returned if it is
+        user = authenticate(username=username, password=password)
+
+        # If we have a User object, the details are correct
+        # If None, no user with matching credentials was found
+        if user:
+            # Is the account active?
+            if user.is_active:
+                # If the account is valid and active, then we can log the user in
+                login(request, user)
+                return redirect(reverse('rango:index'))
+            else:
+                # An inactive account was used - denied
+                return HttpResponse("Your Rango account is disabled.")
+        else:
+            # Bad login details are provided
+            print(f"Invalid login details: {username}, {password}")
+            return HttpResponse("Invalid login details supplied.")
+    else:
+        # No context variables to pass to the template system, hence the blank dictionary object
+        return render(request, 'rango/login.html')
+
