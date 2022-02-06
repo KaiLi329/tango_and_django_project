@@ -1,8 +1,6 @@
 from datetime import datetime
-
-from rango.models import Category, Page, UserProfile
+from rango.models import Category, Page
 from rango.forms import CategoryForm, PageForm, UserForm, UserProfileForm
-from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect
@@ -22,14 +20,11 @@ def index(request):
     context_dict['boldmessage'] = 'Crunchy, creamy, cookie, candy, cupcake!'
     context_dict['categories'] = category_list
     context_dict['pages'] = page_list
-    context_dict['visits'] = int(request.COOKIES.get('visits', 1))
+
+    visitor_cookie_handler(request)
+    context_dict['visits'] = request.session['visits']
 
     response = render(request, 'rango/index.html', context=context_dict)
-
-    # call the helper function to handle the cookies
-    visitor_cookie_handler(request, response)
-
-    # return response back to user
     return response
 
 
@@ -113,13 +108,20 @@ def add_page(request, category_name_slug):
     return render(request, 'rango/add_page.html', context=context_dict)
 
 
-# cookie setting
-def visitor_cookie_handler(request, response):
-    # get the number of visits to the site
-    # We use the COOKIE.get() function to obtain the visits cookie
-    visits = int(request.COOKIES.get('visits', '1'))
+# cookie helper func
+def get_server_side_cookie(request, cookie, default_val=None):
+    val = request.COOKIES.get(cookie)
+    if not val:
+        val = default_val
+    return val
 
-    last_visit_cookie = request.COOKIES.get('last_visit', str(datetime.now()))
+
+# cookie setting
+def visitor_cookie_handler(request):
+    visits = int(get_server_side_cookie(request, 'visits', 1))
+    last_visit_cookie = get_server_side_cookie(request,
+                                               'last_visit',
+                                               str(datetime.now()))
     last_visit_time = datetime.strptime(last_visit_cookie[:-7],
                                         '%Y-%m-%d %H:%M:%S')
 
@@ -127,13 +129,13 @@ def visitor_cookie_handler(request, response):
     if(datetime.now() - last_visit_time).days > 0:
         visits = visits + 1
         # update the last visit cookie now that we have updated the count
-        response.set_cookie('last_visit', str(datetime.now()))
+        request.session['last_visit'] = str(datetime.now())
     else:
         # set the last visit cookie
-        response.set_cookie('last_visit', last_visit_cookie)
+        request.session['last_visit'] = last_visit_cookie
 
     # update/set the visits cookie
-    response.set_cookie('visits', visits)
+    request.session['visits'] = visits
 
 
 # register
@@ -235,4 +237,3 @@ def restricted(request):
 def user_logout(request):
     logout(request)
     return redirect(reverse('rango:index'))
-
