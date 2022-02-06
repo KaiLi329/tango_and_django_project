@@ -21,19 +21,15 @@ def index(request):
     context_dict['categories'] = category_list
     context_dict['pages'] = page_list
 
-    visitor_cookie_handler(request)
-    context_dict['visits'] = request.session['visits']
-
-    response = render(request, 'rango/index.html', context=context_dict)
-    return response
+    return render(request, 'rango/index.html', context=context_dict)
 
 
 # about
 def about(request):
+    context_dict = {}
     visitor_cookie_handler(request)
-    context_dict = {
-        'visits': request.session['visits'],
-    }
+    context_dict['visits'] = request.session['visits']
+
     return render(request, 'rango/about.html', context=context_dict)
 
 
@@ -113,7 +109,7 @@ def add_page(request, category_name_slug):
 
 # cookie helper func
 def get_server_side_cookie(request, cookie, default_val=None):
-    val = request.COOKIES.get(cookie)
+    val = request.session.get(cookie)
     if not val:
         val = default_val
     return val
@@ -121,7 +117,7 @@ def get_server_side_cookie(request, cookie, default_val=None):
 
 # cookie setting
 def visitor_cookie_handler(request):
-    visits = int(get_server_side_cookie(request, 'visits', 1))
+    visits = int(get_server_side_cookie(request, 'visits', '1'))
     last_visit_cookie = get_server_side_cookie(request,
                                                'last_visit',
                                                str(datetime.now()))
@@ -129,7 +125,7 @@ def visitor_cookie_handler(request):
                                         '%Y-%m-%d %H:%M:%S')
 
     # If it's been more than one day since the last visit
-    if(datetime.now() - last_visit_time).days > 0:
+    if (datetime.now() - last_visit_time).days > 0:
         visits = visits + 1
         # update the last visit cookie now that we have updated the count
         request.session['last_visit'] = str(datetime.now())
